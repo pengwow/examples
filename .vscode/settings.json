@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/liupeng/workspace/venv/examples/bin/python"
+    "python.pythonPath": "/Users/liupeng/workspace/venv/examples/bin/python",
+    "python.languageServer": "None"
 }
