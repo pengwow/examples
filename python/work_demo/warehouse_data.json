@@ -1,0 +1,173 @@
+{
+  "event_terminal": [
+    {
+      "id": "WO-2025-1000",
+      "sn": "EVENT-2025-1",
+      "status": "closed",
+      "create_time": "2025-11-02 11:59:36",
+      "update_time": "2025-11-02 12:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-1001",
+      "sn": "EVENT-2025-2",
+      "status": "open",
+      "create_time": "2025-11-07 09:59:36",
+      "update_time": "2025-11-07 09:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-1002",
+      "sn": "EVENT-2025-3",
+      "status": "open",
+      "create_time": "2025-11-12 07:59:36",
+      "update_time": "2025-11-12 08:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-1003",
+      "sn": "EVENT-2025-4",
+      "status": "closed",
+      "create_time": "2025-11-17 05:59:36",
+      "update_time": "2025-11-17 05:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-1004",
+      "sn": "EVENT-2025-5",
+      "status": "open",
+      "create_time": "2025-11-22 03:59:36",
+      "update_time": "2025-11-22 04:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    }
+  ],
+  "problem_full": [
+    {
+      "id": "WO-2025-2000",
+      "sn": "PROBLEM-2025-1",
+      "status": "active",
+      "create_time": "2025-11-07 11:59:36",
+      "update_time": "2025-11-07 11:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-2001",
+      "sn": "PROBLEM-2025-2",
+      "status": "resolved",
+      "create_time": "2025-11-11 08:59:36",
+      "update_time": "2025-11-11 10:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-2002",
+      "sn": "PROBLEM-2025-3",
+      "status": "active",
+      "create_time": "2025-11-15 05:59:36",
+      "update_time": "2025-11-15 05:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-2003",
+      "sn": "PROBLEM-2025-4",
+      "status": "resolved",
+      "create_time": "2025-11-19 02:59:36",
+      "update_time": "2025-11-19 04:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-2004",
+      "sn": "PROBLEM-2025-5",
+      "status": "active",
+      "create_time": "2025-11-22 23:59:36",
+      "update_time": "2025-11-22 23:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    }
+  ],
+  "change_full": [
+    {
+      "id": "WO-2025-3000",
+      "sn": "CHANGE-2025-1",
+      "status": "planned",
+      "create_time": "2025-11-12 11:59:36",
+      "update_time": "2025-11-12 14:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-3001",
+      "sn": "CHANGE-2025-2",
+      "status": "implemented",
+      "create_time": "2025-11-15 07:59:36",
+      "update_time": "2025-11-15 07:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-3002",
+      "sn": "CHANGE-2025-3",
+      "status": "planned",
+      "create_time": "2025-11-18 03:59:36",
+      "update_time": "2025-11-18 03:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-3003",
+      "sn": "CHANGE-2025-4",
+      "status": "implemented",
+      "create_time": "2025-11-20 23:59:36",
+      "update_time": "2025-11-21 02:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    },
+    {
+      "id": "WO-2025-3004",
+      "sn": "CHANGE-2025-5",
+      "status": "planned",
+      "create_time": "2025-11-23 19:59:36",
+      "update_time": "2025-11-23 19:59:36",
+      "confirmed": {
+        "confirm_time": "2025-12-02 11:59:36",
+        "confirm_user": "admin"
+      }
+    }
+  ]
+}
