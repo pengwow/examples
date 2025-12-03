@@ -7,7 +7,7 @@
 1. 每月5-10日执行当年01-01至今的工单入仓确认操作
 2. 有变化的工单需人工确认后入仓，无变化的工单直接入仓
 3. 事件工单入终态，问题工单和变更工单入全量
-4. 入仓后的数据如果再次发生变化，则忽略，以入仓时为准
+4. 入仓后的数据如果再次发生变化，需要继续确认，确认后还要推送到仓库中
 5. 只保留一个副本，每次入仓成功后删除原有副本
 6. 模拟入仓为生成json数据
 """
@@ -236,8 +236,8 @@ def get_changed_work_orders(current_orders: List[WorkOrder], historical_data: Di
     规则：
     1. 如果工单不在历史数据中，视为新工单，需要确认
     2. 如果工单在历史数据中，比较update_time和warehouse_time
-    3. 只有当update_time > warehouse_time时，才认为工单有变化
-    4. 入仓后的数据如果再次发生变化，则忽略，以入仓时为准
+    3. 当update_time > warehouse_time时，认为工单有变化，需要继续确认
+    4. 入仓后的数据如果再次发生变化，需要继续确认，确认后还要推送到仓库中
     
     参数：
         current_orders: 当前工单列表
@@ -259,8 +259,9 @@ def get_changed_work_orders(current_orders: List[WorkOrder], historical_data: Di
             try:
                 warehouse_time = datetime.strptime(history_order["warehouse_time"], "%Y-%m-%d %H:%M:%S")
                 if order.update_time > warehouse_time:
-                    # 工单有变化，需要确认
+                    # 工单有变化，需要继续确认
                     changed_orders.append(order)
+                    print(f"工单 {order.id} 有变化（入仓时间：{warehouse_time}，更新时间：{order.update_time}），需要重新确认")
                 else:
                     # 工单无变化，不需要确认
                     print(f"工单 {order.id} 无变化（入仓时间：{warehouse_time}，更新时间：{order.update_time}）")
@@ -324,7 +325,7 @@ def warehouse_work_orders(current_orders: List[WorkOrder], confirmed_orders: Lis
     规则：
     1. 事件工单入终态
     2. 问题工单和变更工单入全量
-    3. 入仓后的数据如果再次发生变化，则忽略，以入仓时为准
+    3. 入仓后的数据如果再次发生变化，需要继续确认，确认后还要推送到仓库中
     4. 只保留一个副本，每次入仓成功后删除原有副本
     
     参数：
