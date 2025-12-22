@@ -9,6 +9,90 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from typing import Optional, Dict, List
 
+def parse_single_email_address(email_str: str) -> tuple:
+    """
+    解析单个邮件地址字符串，提取显示名称和邮箱地址，并解码非ASCII字符
+    
+    参数:
+        email_str: 邮件地址字符串，如 'Display Name <email@example.com>'
+    
+    返回:
+        tuple: (display_name, email_address) 的元组
+    """
+    if not email_str:
+        return '', ''
+    
+    try:
+        # 解析邮件地址
+        display_name, email_address = email.utils.parseaddr(email_str)
+        
+        # 解码显示名称中的非ASCII字符
+        if display_name:
+            decoded_parts = []
+            for part, encoding in email.header.decode_header(display_name):
+                if isinstance(part, bytes):
+                    # 如果是字节类型，使用指定的编码解码
+                    try:
+                        decoded_part = part.decode(encoding if encoding else 'utf-8')
+                    except UnicodeDecodeError:
+                        # 如果解码失败，尝试使用utf-8
+                        decoded_part = part.decode('utf-8', errors='replace')
+                else:
+                    # 如果已经是字符串类型，直接使用
+                    decoded_part = part
+                decoded_parts.append(decoded_part)
+            display_name = ''.join(decoded_parts)
+        
+        return display_name, email_address
+    except Exception:
+        # 如果解析失败，返回原始字符串作为邮箱地址
+        return '', email_str
+
+
+def parse_email_addresses(email_str: str) -> list:
+    """
+    解析包含多个邮件地址的字符串，提取每个地址的显示名称和邮箱地址，并解码非ASCII字符
+    
+    参数:
+        email_str: 包含多个邮件地址的字符串，如 'Display Name <email@example.com>, Another Name <another@example.com>'
+    
+    返回:
+        list: 包含 (display_name, email_address) 元组的列表
+    """
+    if not email_str:
+        return []
+    
+    try:
+        # 解析多个邮件地址
+        addresses = email.utils.getaddresses([email_str])
+        decoded_addresses = []
+        
+        # 对每个地址的显示名称进行解码
+        for display_name, email_address in addresses:
+            if display_name:
+                decoded_parts = []
+                for part, encoding in email.header.decode_header(display_name):
+                    if isinstance(part, bytes):
+                        # 如果是字节类型，使用指定的编码解码
+                        try:
+                            decoded_part = part.decode(encoding if encoding else 'utf-8')
+                        except UnicodeDecodeError:
+                            # 如果解码失败，尝试使用utf-8
+                            decoded_part = part.decode('utf-8', errors='replace')
+                    else:
+                        # 如果已经是字符串类型，直接使用
+                        decoded_part = part
+                    decoded_parts.append(decoded_part)
+                display_name = ''.join(decoded_parts)
+            
+            decoded_addresses.append((display_name, email_address))
+        
+        return decoded_addresses
+    except Exception:
+        # 如果解析失败，返回包含原始字符串的列表
+        return [('', email_str)]
+
+
 def generate_email_uid(from_email: str, subject: str, sent_time: str) -> str:
     """
     根据发送人、邮件标题、发送时间生成MD5作为邮件UID
@@ -97,6 +181,8 @@ def reply_to_email_by_md5_uid(
                 
                 # 提取邮件信息
                 msg_from = msg['From'] if msg['From'] else ''
+                msg_to = msg['To'] if msg['To'] else ''
+                msg_cc = msg['Cc'] if msg['Cc'] else ''
                 msg_subject = msg['Subject'] if msg['Subject'] else ''
                 msg_date = msg['Date'] if msg['Date'] else ''
                 
@@ -128,6 +214,7 @@ def reply_to_email_by_md5_uid(
             # 提取需要的邮件头信息
             from_email = msg['From']
             to_email = msg['To']
+            cc_email = msg['Cc'] if msg['Cc'] else ''
             original_subject = msg['Subject']
             message_id = msg['Message-ID']
             
@@ -146,7 +233,29 @@ def reply_to_email_by_md5_uid(
             
             # 3. 构建回复正文
             # 添加原始邮件信息作为引用
-            quoted_text = f"\n--- 原始邮件 ---\n发件人: {from_email}\n收件人: {to_email}\n主题: {original_subject}\n\n"
+            quoted_text = f"\n--- 原始邮件 ---\n发件人: {from_email}\n收件人: {to_email}"
+            if cc_email:
+                quoted_text += f"\n抄送人: {cc_email}"
+            quoted_text += f"\n主题: {original_subject}\n\n"
+            
+            # 演示如何解析显示名称和邮箱地址
+            print("\n=== 邮件地址解析示例 ===")
+            # 解析发件人
+            if from_email:
+                sender_name, sender_email = parse_single_email_address(from_email)
+                print(f"发件人 - 显示名称: '{sender_name}', 邮箱地址: '{sender_email}'")
+            
+            # 解析收件人
+            if to_email:
+                print("收件人列表:")
+                for to_name, to_addr in parse_email_addresses(to_email):
+                    print(f"  - 显示名称: '{to_name}', 邮箱地址: '{to_addr}'")
+            
+            # 解析抄送人
+            if cc_email:
+                print("抄送人列表:")
+                for cc_name, cc_addr in parse_email_addresses(cc_email):
+                    print(f"  - 显示名称: '{cc_name}', 邮箱地址: '{cc_addr}'")
             
             # 提取原始邮件正文
             original_body = ""
@@ -246,11 +355,47 @@ def test_connection_syntax():
         print(f"✗ 连接语法测试失败: {str(e)}")
         return False
 
+def test_email_address_parsing():
+    """
+    测试邮件地址解析功能
+    """
+    print("\n=== 测试邮件地址解析功能 ===")
+    
+    # 测试单个邮件地址解析
+    test_cases = [
+        "刘鹏 <pengwow@xxx.com>",
+        "张三 <zhangsan@example.com>",
+        "李四 <lisi@example.com>",
+        "wangwu@example.com",  # 没有显示名称
+        "王五 <wangwu@example.com>, 赵六 <zhaoliu@example.com>",  # 多个地址
+        "",  # 空字符串
+    ]
+    
+    for i, test_case in enumerate(test_cases):
+        print(f"\n测试用例 {i+1}: {test_case}")
+        if "," in test_case:
+            # 测试多个地址解析
+            addresses = parse_email_addresses(test_case)
+            print(f"  解析结果 ({len(addresses)}个地址):")
+            for name, email in addresses:
+                print(f"    - 名称: '{name}', 邮箱: '{email}'")
+        else:
+            # 测试单个地址解析
+            name, email = parse_single_email_address(test_case)
+            print(f"  解析结果: 名称='{name}', 邮箱='{email}'")
+    
+    print("\n=== 测试完成 ===")
+
+
 # 示例用法
 if __name__ == "__main__":
     # 先测试连接语法
     print("正在测试连接语法...")
     test_connection_syntax()
+    print("")
+    
+    # 测试邮件地址解析功能
+    test_email_address_parsing()
     print("")
     # 示例1: 使用完整参数调用
     config = {
