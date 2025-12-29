@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "klinecharts": "^10.0.0-beta1",
+    "@klinecharts/pro": "^0.1.1",
+    "klinecharts": "^9.8.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
