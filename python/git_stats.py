@@ -577,38 +577,47 @@ class FeishuAPI:
             }
         }
 
-    def send_card_banches(self, receive_id, card_dict):
+    def send_card_banches(self, receive_id: list, card_dict: dict, msg_type="interactive"):
         """
-        发送飞书分支卡片消息
-        
+        批量发送卡片消息
+
         参数:
-            receive_id: 接收者ID列表
-            card_dict: 卡片内容字典
-        
+            receive_id (list): 接收者ID列表
+            card_dict (dict): 要发送的卡片字典，包含卡片ID和其他配置
+            msg_type (str, optional): 消息类型，默认是 "interactive"
+
         返回:
-            dict: 发送结果
+            dict: 包含发送结果的字典
+
+        异常:
+            ValueError: 如果发送失败
         """
-        try:
-            # 创建卡片
-            card_data = {
-                "card_type": "card_json",
-                "card_data": card_dict
-            }
-            card_result = self.create_card("card_json", card_dict)
-            card_id = card_result.get("card_id")
-            if not card_id:
-                raise ValueError("创建卡片失败：未返回card_id")
-            
-            # 发送卡片消息
-            results = []
-            for rid in receive_id:
-                result = self.send_card_message("open_id", rid, card_id)
-                results.append(result)
-            
-            return {"success": True, "results": results, "card_id": card_id}
-        except Exception as e:
-            logger.error(f"发送卡片消息失败: {str(e)}")
-            raise
+        url = "https://open.feishu.cn/open-apis/message/v4/batch_send/"
+        request_body = {
+            "open_ids": receive_id,
+            "msg_type": msg_type,
+            "card": card_dict,
+        }
+        access_token = self.get_access_token()
+        # 发送POST请求，直接使用json参数，让requests库自动处理JSON编码
+        response = requests.post(
+            url=url,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json; charset=utf-8",
+            },
+            json=request_body,
+        )
+        response.raise_for_status()
+        result = response.json()
+        if result.get("code") != 0:
+            error_msg = result.get("msg", "未知错误")
+            logger.error(f"批量发送卡片消息失败: {error_msg}")
+            raise ValueError(f"批量发送卡片消息失败: {error_msg}")
+        logger.info(
+            f"成功批量发送卡片消息，接收者ID数量: {len(receive_id)}"
+        )
+        return result.get("data", {})
 
 # --- 核心功能函数 ---
 
