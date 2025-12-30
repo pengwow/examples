@@ -22,22 +22,24 @@ import argparse
 # --- 飞书API相关代码 --- #
 # 配置日志
 import logging
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
+
 def get_feishu_access_token(app_id, app_secret):
     """
     获取飞书API的access_token
-    
+
     参数:
         app_id (str): 飞书应用的app_id
         app_secret (str): 飞书应用的app_secret
-    
+
     返回:
         str: 有效的access_token
-    
+
     异常:
         requests.exceptions.RequestException: 网络请求异常
         ValueError: 响应数据格式错误或获取token失败
@@ -101,7 +103,7 @@ class FeishuAPI:
     def __init__(self, app_id, app_secret):
         """
         初始化飞书API客户端
-        
+
         参数:
             app_id (str): 飞书应用的app_id
             app_secret (str): 飞书应用的app_secret
@@ -114,10 +116,10 @@ class FeishuAPI:
     def get_access_token(self, force_refresh=False):
         """
         获取或刷新access_token（带缓存机制）
-        
+
         参数:
             force_refresh (bool): 是否强制刷新token，默认False
-        
+
         返回:
             str: 有效的access_token
         """
@@ -141,13 +143,13 @@ class FeishuAPI:
     def get_department_info(self, department_id):
         """
         获取飞书部门信息
-        
+
         参数:
             department_id (str): 部门ID，如 'od-64242a18099d3a31acd24d8fce8dxxxx'
-        
+
         返回:
             dict: 部门信息
-        
+
         异常:
             requests.exceptions.RequestException: 网络请求异常
             ValueError: API调用失败
@@ -217,16 +219,16 @@ class FeishuAPI:
     def create_card(self, card_type, card_data):
         """
         创建飞书卡片实体
-        
+
         参数:
             card_type (str): 卡片类型，支持 'card_json' 或 'template'
             card_data (str): 卡片数据，根据card_type的不同格式不同：
                 - 当card_type为'card_json'时，card_data是卡片JSON字符串
                 - 当card_type为'template'时，card_data是模板数据JSON字符串
-        
+
         返回:
             dict: 创建卡片的结果
-        
+
         异常:
             requests.exceptions.RequestException: 网络请求异常
             ValueError: API调用失败或参数错误
@@ -331,16 +333,16 @@ class FeishuAPI:
     ):
         """
         批量获取飞书用户ID
-        
+
         参数:
             emails (list, optional): 邮箱列表，如 ['zhangsan@z.com', 'lisi@a.com']
             mobiles (list, optional): 手机号列表，如 ['13011111111', '13022222222']
             include_resigned (bool, optional): 是否包含离职人员，默认False
             user_id_type (str, optional): 用户ID类型，如 'user_id', 'open_id', 'union_id'，默认 'user_id'
-        
+
         返回:
             dict: 用户ID映射信息
-        
+
         异常:
             requests.exceptions.RequestException: 网络请求异常
             ValueError: API调用失败或参数错误
@@ -435,15 +437,15 @@ class FeishuAPI:
     def send_card_message(self, receive_id_type, receive_id, card_id):
         """
         发送飞书交互式卡片消息
-        
+
         参数:
             receive_id_type (str): 接收者ID类型，如 'open_id', 'user_id', 'union_id' 等
             receive_id (str): 接收者ID，根据receive_id_type的不同而变化
             card_id (str): 卡片ID，如 '7371713483664506900'
-        
+
         返回:
             dict: 发送消息的结果
-        
+
         异常:
             requests.exceptions.RequestException: 网络请求异常
             ValueError: API调用失败或参数错误
@@ -551,33 +553,28 @@ class FeishuAPI:
     def gen_markdown(self, content):
         """
         生成飞书卡片的markdown内容
-        
+
         参数:
             content: markdown格式的文本内容
-        
+
         返回:
             dict: 飞书卡片的markdown内容
         """
         return {
-            "config": {
-                "wide_screen_mode": True
+            "schema": "2.0",
+            # "config": {"wide_screen_mode": True},
+            "body": {
+                "elements": [{"tag": "markdown", "content": content}],
             },
-            "elements": [
-                {
-                    "tag": "markdown",
-                    "content": content
-                }
-            ],
             "header": {
                 "template": "blue",
-                "title": {
-                    "content": "Git代码提交统计",
-                    "tag": "plain_text"
-                }
-            }
+                "title": {"content": "Git代码提交统计", "tag": "plain_text"},
+            },
         }
 
-    def send_card_banches(self, receive_id: list, card_dict: dict, msg_type="interactive"):
+    def send_card_banches(
+        self, receive_id: list, card_dict: dict, msg_type="interactive"
+    ):
         """
         批量发送卡片消息
 
@@ -614,12 +611,12 @@ class FeishuAPI:
             error_msg = result.get("msg", "未知错误")
             logger.error(f"批量发送卡片消息失败: {error_msg}")
             raise ValueError(f"批量发送卡片消息失败: {error_msg}")
-        logger.info(
-            f"成功批量发送卡片消息，接收者ID数量: {len(receive_id)}"
-        )
+        logger.info(f"成功批量发送卡片消息，接收者ID数量: {len(receive_id)}")
         return result.get("data", {})
 
+
 # --- 核心功能函数 ---
+
 
 def send_feishu_message(content, app_id, app_secret, receive_id_type, receive_id):
     """
@@ -636,18 +633,21 @@ def send_feishu_message(content, app_id, app_secret, receive_id_type, receive_id
     markdown_content = feishu_api.gen_markdown(content)
     # 发送飞书消息
     result = feishu_api.send_card_banches(
-        receive_id=[receive_id],
-        card_dict=markdown_content
+        receive_id=[receive_id], card_dict=markdown_content
     )
     return result
-
 
 
 def run_git_command(command, directory="."):
     """执行 git 命令并返回输出"""
     try:
         process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True, cwd=directory
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
+            text=True,
+            cwd=directory,
         )
         stdout, stderr = process.communicate()
         if process.returncode != 0:
@@ -674,57 +674,67 @@ def get_commit_stats(author_name, directory="."):
     output = run_git_command(git_command, directory)
 
     commits = []
-    
+
     # 重新构建完整的提交块
-    all_parts = output.split('\0')
+    all_parts = output.split("\0")
     current_commit = ""
-    
+
     for part in all_parts:
         if part.startswith("COMMIT_START"):
             # 如果已有当前提交，先处理它
             if current_commit:
                 # 处理当前提交
-                commit_pattern = re.compile(r'COMMIT_START(.*?)\n(.*?)\n(.*?)\nCOMMIT_END(.*)', re.DOTALL)
+                commit_pattern = re.compile(
+                    r"COMMIT_START(.*?)\n(.*?)\n(.*?)\nCOMMIT_END(.*)", re.DOTALL
+                )
                 match = commit_pattern.search(current_commit)
                 if match:
                     commit_hash, date, author, file_changes_str = match.groups()
-                    
+
                     additions, deletions = 0, 0
                     # 使用 null 字符分割文件变更记录
-                    file_changes = file_changes_str.split('\0')
+                    file_changes = file_changes_str.split("\0")
                     for change in file_changes:
                         if not change.strip():
                             continue
                         parts = change.split()
                         # 格式: 增加行数 删除行数 文件名
-                        if len(parts) >= 2 and parts[0].isdigit() and parts[1].isdigit():
+                        if (
+                            len(parts) >= 2
+                            and parts[0].isdigit()
+                            and parts[1].isdigit()
+                        ):
                             additions += int(parts[0])
                             deletions += int(parts[1])
 
-                    commits.append({
-                        "hash": commit_hash,
-                        "date": date,
-                        "author": author,
-                        "additions": additions,
-                        "deletions": deletions,
-                        "total_changes": additions + deletions
-                    })
+                    commits.append(
+                        {
+                            "hash": commit_hash,
+                            "date": date,
+                            "author": author,
+                            "additions": additions,
+                            "deletions": deletions,
+                            "total_changes": additions + deletions,
+                        }
+                    )
             # 开始新提交
             current_commit = part
         else:
             # 添加到当前提交
             current_commit += "\0" + part
-    
+
     # 处理最后一个提交
     if current_commit:
-        commit_pattern = re.compile(r'COMMIT_START(.*?)\n(.*?)\n(.*?)\nCOMMIT_END(.*)', re.DOTALL)
+        commit_pattern = re.compile(
+            r"COMMIT_START(.*?)\n(.*?)\n(.*?)\nCOMMIT_END(.*)", re.DOTALL
+        )
         match = commit_pattern.search(current_commit)
         if match:
             commit_hash, date, author, file_changes_str = match.groups()
-            
+
             additions, deletions = 0, 0
             # 使用 null 字符分割文件变更记录
-            file_changes = file_changes_str.split('\0')
+            file_changes = file_changes_str.split("\0")
             for change in file_changes:
                 if not change.strip():
                     continue
@@ -734,14 +744,16 @@ def get_commit_stats(author_name, directory="."):
                     additions += int(parts[0])
                     deletions += int(parts[1])
 
-            commits.append({
-                "hash": commit_hash,
-                "date": date,
-                "author": author,
-                "additions": additions,
-                "deletions": deletions,
-                "total_changes": additions + deletions
-            })
+            commits.append(
+                {
+                    "hash": commit_hash,
+                    "date": date,
+                    "author": author,
+                    "additions": additions,
+                    "deletions": deletions,
+                    "total_changes": additions + deletions,
+                }
+            )
     return commits
 
 
@@ -749,18 +761,20 @@ def aggregate_stats_by_period(commits, period):
     """
     根据不同的周期（天、周、月）聚合统计数据
     """
-    stats = defaultdict(lambda: {"commits": 0, "additions": 0, "deletions": 0, "total_changes": 0})
-    
+    stats = defaultdict(
+        lambda: {"commits": 0, "additions": 0, "deletions": 0, "total_changes": 0}
+    )
+
     for commit in commits:
         commit_date = datetime.strptime(commit["date"], "%Y-%m-%d")
-        
-        if period == 'daily':
-            key = commit_date.strftime("%Y-%m-%d") # 例如: 2023-10-27
-        elif period == 'weekly':
+
+        if period == "daily":
+            key = commit_date.strftime("%Y-%m-%d")  # 例如: 2023-10-27
+        elif period == "weekly":
             # ISO 周格式: 年份-周数, 例如 2023-43
-            key = commit_date.strftime("%Y-W%V") 
-        elif period == 'monthly':
-            key = commit_date.strftime("%Y-%m")   # 例如: 2023-10
+            key = commit_date.strftime("%Y-W%V")
+        elif period == "monthly":
+            key = commit_date.strftime("%Y-%m")  # 例如: 2023-10
         else:
             raise ValueError("Invalid period. Choose 'daily', 'weekly', or 'monthly'.")
 
@@ -768,20 +782,24 @@ def aggregate_stats_by_period(commits, period):
         stats[key]["additions"] += commit["additions"]
         stats[key]["deletions"] += commit["deletions"]
         stats[key]["total_changes"] += commit["total_changes"]
-        
+
     return stats
 
 
 def print_stats(stats, period_name):
     """美化打印统计结果"""
     print(f"\n--- {period_name} 代码提交统计 ---")
-    print(f"{'时间段':<12} | {'提交次数':<8} | {'新增行数':<10} | {'删除行数':<10} | {'总计变更':<10}")
+    print(
+        f"{'时间段':<12} | {'提交次数':<8} | {'新增行数':<10} | {'删除行数':<10} | {'总计变更':<10}"
+    )
     print("-" * 65)
-    
+
     # 按时间段降序排序后输出（最新的在顶部）
     for key in sorted(stats.keys(), reverse=True):
         data = stats[key]
-        print(f"{key:<12} | {data['commits']:<8} | {data['additions']:<10} | {data['deletions']:<10} | {data['total_changes']:<10}")
+        print(
+            f"{key:<12} | {data['commits']:<8} | {data['additions']:<10} | {data['deletions']:<10} | {data['total_changes']:<10}"
+        )
 
 
 def generate_markdown_stats(stats, period_name):
@@ -796,38 +814,74 @@ def generate_markdown_stats(stats, period_name):
     markdown.append("|")
     markdown.append("| 时间段 | 提交次数 | 新增行数 | 删除行数 | 总计变更 |")
     markdown.append("| ------ | ------- | ------- | ------- | ------- |")
-    
+
     # 按时间段降序排序后输出（最新的在顶部）
     for key in sorted(stats.keys(), reverse=True):
         data = stats[key]
-        markdown.append(f"| {key} | {data['commits']} | {data['additions']} | {data['deletions']} | {data['total_changes']} |")
-    
+        markdown.append(
+            f"| {key} | {data['commits']} | {data['additions']} | {data['deletions']} | {data['total_changes']} |"
+        )
+
     markdown.append("|")
     return "\n".join(markdown)
 
 
 def main():
     parser = argparse.ArgumentParser(description="统计 Git 代码提交量。")
-    parser.add_argument("-a", "--author", type=str, default=None, help="指定作者姓名。如果为空，则统计所有作者的提交。")
-    parser.add_argument("-p", "--period", type=str, default="all", choices=["daily", "weekly", "monthly", "all"], 
-                        help="指定统计维度：daily, weekly, monthly, all (默认)。")
-    parser.add_argument("-d", "--directory", type=str, default=".", help="指定 Git 仓库目录。如果为空，则使用当前目录。")
-    
+    parser.add_argument(
+        "-a",
+        "--author",
+        type=str,
+        default=None,
+        help="指定作者姓名。如果为空，则统计所有作者的提交。",
+    )
+    parser.add_argument(
+        "-p",
+        "--period",
+        type=str,
+        default="all",
+        choices=["daily", "weekly", "monthly", "all"],
+        help="指定统计维度：daily, weekly, monthly, all (默认)。",
+    )
+    parser.add_argument(
+        "-d",
+        "--directory",
+        type=str,
+        default=".",
+        help="指定 Git 仓库目录。如果为空，则使用当前目录。",
+    )
+
     # 飞书通知参数
-    parser.add_argument("--feishu-app-id", type=str, default=None, help="飞书应用的app_id。")
-    parser.add_argument("--feishu-app-secret", type=str, default=None, help="飞书应用的app_secret。")
-    parser.add_argument("--feishu-receive-id-type", type=str, default="user_id", choices=["open_id", "user_id", "union_id", "email", "chat_id"], 
-                        help="飞书接收者ID类型，默认'user_id'。")
-    parser.add_argument("--feishu-receive-id", type=str, default=None, help="飞书接收者ID。")
-    parser.add_argument("--feishu-mobile", type=str, default=None, help="飞书用户的手机号，会自动获取openid进行发送。")
-    
+    parser.add_argument(
+        "--feishu-app-id", type=str, default=None, help="飞书应用的app_id。"
+    )
+    parser.add_argument(
+        "--feishu-app-secret", type=str, default=None, help="飞书应用的app_secret。"
+    )
+    parser.add_argument(
+        "--feishu-receive-id-type",
+        type=str,
+        default="user_id",
+        choices=["open_id", "user_id", "union_id", "email", "chat_id"],
+        help="飞书接收者ID类型，默认'user_id'。",
+    )
+    parser.add_argument(
+        "--feishu-receive-id", type=str, default=None, help="飞书接收者ID。"
+    )
+    parser.add_argument(
+        "--feishu-mobile",
+        type=str,
+        default=None,
+        help="飞书用户的手机号，会自动获取openid进行发送。",
+    )
+
     args = parser.parse_args()
-    
+
     # 验证目录存在
     if not os.path.exists(args.directory):
         print(f"错误：目录 '{args.directory}' 不存在。")
         sys.exit(1)
-    
+
     # 验证目录是 Git 仓库
     try:
         run_git_command("git rev-parse --is-inside-work-tree", args.directory)
@@ -841,13 +895,15 @@ def main():
     if not author:
         author = run_git_command("git config user.name", args.directory).strip()
         if not author:
-            print("错误：无法确定作者。请在命令行中使用 -a 参数指定，或设置 git user.name。")
+            print(
+                "错误：无法确定作者。请在命令行中使用 -a 参数指定，或设置 git user.name。"
+            )
             sys.exit(1)
         print(f"未指定作者，将统计当前 Git 用户 '{author}' 的提交。\n")
 
     print(f"正在统计作者 '{author}' 的提交记录...")
     all_commits = get_commit_stats(author, args.directory)
-    
+
     if not all_commits:
         print(f"未找到作者 '{author}' 的任何提交记录。")
         return
@@ -855,41 +911,47 @@ def main():
     print(f"共找到 {len(all_commits)} 条提交记录。")
 
     # 计算所有提交的总计
-    total_additions = sum(commit['additions'] for commit in all_commits)
-    total_deletions = sum(commit['deletions'] for commit in all_commits)
-    total_changes = sum(commit['total_changes'] for commit in all_commits)
+    total_additions = sum(commit["additions"] for commit in all_commits)
+    total_deletions = sum(commit["deletions"] for commit in all_commits)
+    total_changes = sum(commit["total_changes"] for commit in all_commits)
 
     # 用于收集markdown内容
     markdown_content = []
-    
+
     # 标题
     markdown_content.append("# Git 代码提交量统计")
-    markdown_content.append(f"**统计时间**：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    markdown_content.append(
+        f"**统计时间**：{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     markdown_content.append(f"**统计仓库**：{os.path.abspath(args.directory)}")
     markdown_content.append(f"**统计作者**：{author}")
     markdown_content.append("")
-    
+
     # 根据参数进行不同维度的统计和输出
-    if args.period in ['daily', 'all']:
-        daily_stats = aggregate_stats_by_period(all_commits, 'daily')
+    if args.period in ["daily", "all"]:
+        daily_stats = aggregate_stats_by_period(all_commits, "daily")
         print_stats(daily_stats, "每日 (Daily)")
         markdown_content.append(generate_markdown_stats(daily_stats, "每日 (Daily)"))
-    
-    if args.period in ['weekly', 'all']:
-        weekly_stats = aggregate_stats_by_period(all_commits, 'weekly')
+
+    if args.period in ["weekly", "all"]:
+        weekly_stats = aggregate_stats_by_period(all_commits, "weekly")
         print_stats(weekly_stats, "每周 (Weekly)")
         markdown_content.append(generate_markdown_stats(weekly_stats, "每周 (Weekly)"))
-        
-    if args.period in ['monthly', 'all']:
-        monthly_stats = aggregate_stats_by_period(all_commits, 'monthly')
+
+    if args.period in ["monthly", "all"]:
+        monthly_stats = aggregate_stats_by_period(all_commits, "monthly")
         print_stats(monthly_stats, "每月 (Monthly)")
-        markdown_content.append(generate_markdown_stats(monthly_stats, "每月 (Monthly)"))
-    
+        markdown_content.append(
+            generate_markdown_stats(monthly_stats, "每月 (Monthly)")
+        )
+
     # 显示总计行
     print(f"\n--- 总计 (Total) 代码提交统计 ---")
-    print(f"{'总计':<12} | {len(all_commits):<8} | {total_additions:<10} | {total_deletions:<10} | {total_changes:<10}")
+    print(
+        f"{'总计':<12} | {len(all_commits):<8} | {total_additions:<10} | {total_deletions:<10} | {total_changes:<10}"
+    )
     print("-" * 65)
-    
+
     # 生成总计markdown
     total_markdown = [
         "## 总计 (Total) 代码提交统计",
@@ -898,23 +960,25 @@ def main():
         "| ---- | ------- | ------- | ------- | ------- |",
         f"| 总计 | {len(all_commits)} | {total_additions} | {total_deletions} | {total_changes} |",
         "|",
-        ""
+        "",
     ]
     markdown_content.append("\n".join(total_markdown))
-    
+
     # 处理飞书手机号参数
     if args.feishu_mobile:
         # 验证手机号格式
-        if not re.match(r'^1[3-9]\d{9}$', args.feishu_mobile):
+        if not re.match(r"^1[3-9]\d{9}$", args.feishu_mobile):
             print("错误：无效的手机号格式。")
             sys.exit(1)
-        
+
         # 创建FeishuAPI实例
         feishu_api = FeishuAPI(args.feishu_app_id, args.feishu_app_secret)
-        
+
         # 通过手机号获取openid
         try:
-            user_ids = feishu_api.batch_get_user_id(mobiles=[args.feishu_mobile], user_id_type="open_id")
+            user_ids = feishu_api.batch_get_user_id(
+                mobiles=[args.feishu_mobile], user_id_type="open_id"
+            )
             if user_ids and user_ids.get("user_list"):
                 user_info = user_ids["user_list"][0]
                 args.feishu_receive_id = user_info["user_id"]
@@ -925,7 +989,7 @@ def main():
         except Exception as e:
             print(f"通过手机号获取飞书用户信息时发生错误：{e}")
             sys.exit(1)
-    
+
     # 如果提供了飞书参数，则发送飞书通知
     if args.feishu_app_id and args.feishu_app_secret and args.feishu_receive_id:
         full_content = "\n".join(markdown_content)
@@ -936,7 +1000,7 @@ def main():
                 args.feishu_app_id,
                 args.feishu_app_secret,
                 args.feishu_receive_id_type,
-                args.feishu_receive_id
+                args.feishu_receive_id,
             )
             print(f"飞书通知发送结果：{response}")
         except Exception as e:
