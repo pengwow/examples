@@ -6,10 +6,11 @@ import base64
 import hashlib
 import hmac
 import os
+import struct
 
 def encrypt_data(data, salt, master_key):
     """
-    使用加密算法加密数据（基于PBKDF2和HMAC-SHA256）
+    使用加密算法加密数据（基于PBKDF2派生密钥 + XOR加密）
     
     参数:
         data: 要加密的数据 (str)
@@ -19,7 +20,7 @@ def encrypt_data(data, salt, master_key):
     返回:
         dict: {
             'status': bool,  # 是否成功
-            'data': str,     # 加密后的数据，格式为 base64(derived_key + hmac)
+            'data': str,     # 加密后的数据，格式为 base64(salt + iv + ciphertext + hmac)
             'message': str   # 状态消息
         }
     """
@@ -46,15 +47,36 @@ def encrypt_data(data, salt, master_key):
             master_key.encode('utf-8'),
             salt.encode('utf-8'),
             100000,
-            dklen=32  # 32字节密钥
+            dklen=64  # 64字节密钥（32字节用于加密，32字节用于HMAC）
         )
         
-        # 使用派生密钥对数据进行HMAC签名
-        hmac_obj = hmac.new(derived_key, data.encode('utf-8'), hashlib.sha256)
+        # 分离加密密钥和HMAC密钥
+        enc_key = derived_key[:32]  # 前32字节用于加密
+        hmac_key = derived_key[32:]  # 后32字节用于HMAC
+        
+        # 生成随机IV（初始化向量）
+        iv = os.urandom(16)
+        
+        # 将数据转换为字节
+        data_bytes = data.encode('utf-8')
+        
+        # 使用XOR加密（使用派生密钥和IV）
+        encrypted_bytes = bytearray()
+        for i, byte in enumerate(data_bytes):
+            # 使用enc_key和IV的组合作为密钥流
+            key_byte = enc_key[i % len(enc_key)] ^ iv[i % len(iv)]
+            encrypted_bytes.append(byte ^ key_byte)
+        
+        # 计算HMAC（用于验证数据完整性）
+        hmac_obj = hmac.new(hmac_key, iv + bytes(encrypted_bytes), hashlib.sha256)
         hmac_digest = hmac_obj.digest()
         
-        # 将派生密钥和HMAC合并，然后进行base64编码
-        combined = derived_key + hmac_digest
+        # 组合所有数据：盐值长度 + 盐值 + IV + 密文 + HMAC
+        salt_bytes = salt.encode('utf-8')
+        salt_length = struct.pack('>I', len(salt_bytes))
+        combined = salt_length + salt_bytes + iv + bytes(encrypted_bytes) + hmac_digest
+        
+        # Base64编码
         encrypted_data = base64.b64encode(combined).decode('utf-8')
         
         return {
@@ -72,7 +94,7 @@ def encrypt_data(data, salt, master_key):
 
 def decrypt_data(encrypted_data, salt, master_key, original_data=None):
     """
-    验证加密的数据（基于HMAC验证）
+    解密加密的数据（基于XOR解密 + HMAC验证）
     
     参数:
         encrypted_data: 加密后的数据 (str)
@@ -83,7 +105,7 @@ def decrypt_data(encrypted_data, salt, master_key, original_data=None):
     返回:
         dict: {
             'status': bool,  # 是否成功
-            'data': str,     # 解密后的数据（如果验证成功）
+            'data': str,     # 解密后的数据（明文）
             'message': str   # 状态消息
         }
     """
@@ -106,9 +128,20 @@ def decrypt_data(encrypted_data, salt, master_key, original_data=None):
         # 解码base64
         combined = base64.b64decode(encrypted_data.encode('utf-8'))
         
-        # 提取派生密钥和HMAC
-        stored_derived_key = combined[:32]  # 前32字节是派生密钥
-        stored_hmac = combined[32:]  # 剩余的是HMAC
+        # 解析数据结构：盐值长度 + 盐值 + IV + 密文 + HMAC
+        salt_length = struct.unpack('>I', combined[:4])[0]
+        stored_salt = combined[4:4+salt_length].decode('utf-8')
+        iv = combined[4+salt_length:4+salt_length+16]
+        ciphertext = combined[4+salt_length+16:-32]  # HMAC是32字节
+        stored_hmac = combined[-32:]
+        
+        # 验证盐值是否匹配
+        if stored_salt != salt:
+            return {
+                'status': False,
+                'data': '',
+                'message': '盐值验证失败：盐值不匹配'
+            }
         
         # 使用相同的方法重新派生密钥
         derived_key = hashlib.pbkdf2_hmac(
@@ -116,43 +149,46 @@ def decrypt_data(encrypted_data, salt, master_key, original_data=None):
             master_key.encode('utf-8'),
             salt.encode('utf-8'),
             100000,
-            dklen=32
+            dklen=64
         )
         
-        # 验证派生密钥是否匹配
-        if derived_key != stored_derived_key:
+        # 分离加密密钥和HMAC密钥
+        enc_key = derived_key[:32]
+        hmac_key = derived_key[32:]
+        
+        # 验证HMAC
+        hmac_obj = hmac.new(hmac_key, iv + ciphertext, hashlib.sha256)
+        computed_hmac = hmac_obj.digest()
+        
+        if computed_hmac != stored_hmac:
             return {
                 'status': False,
                 'data': '',
-                'message': '密钥验证失败：主密钥或盐值不匹配'
+                'message': 'HMAC验证失败：数据可能被篡改或密钥不正确'
             }
         
-        # 如果提供了原始数据，验证HMAC
-        if original_data is not None:
-            # 重新计算HMAC
-            hmac_obj = hmac.new(derived_key, original_data.encode('utf-8'), hashlib.sha256)
-            computed_hmac = hmac_obj.digest()
-            
-            # 验证HMAC是否匹配
-            if computed_hmac != stored_hmac:
-                return {
-                    'status': False,
-                    'data': '',
-                    'message': '数据验证失败：数据不正确'
-                }
-            
+        # 使用XOR解密
+        decrypted_bytes = bytearray()
+        for i, byte in enumerate(ciphertext):
+            key_byte = enc_key[i % len(enc_key)] ^ iv[i % len(iv)]
+            decrypted_bytes.append(byte ^ key_byte)
+        
+        # 转换为字符串
+        decrypted_data = decrypted_bytes.decode('utf-8')
+        
+        # 如果提供了原始数据，验证解密结果是否正确
+        if original_data is not None and decrypted_data != original_data:
             return {
-                'status': True,
-                'data': original_data,
-                'message': 'ok'
-            }
-        else:
-            # 如果没有提供原始数据，只验证密钥是否正确
-            return {
-                'status': True,
+                'status': False,
                 'data': '',
-                'message': 'ok'
+                'message': '数据验证失败：解密结果与原始数据不匹配'
             }
+        
+        return {
+            'status': True,
+            'data': decrypted_data,
+            'message': 'ok'
+        }
         
     except Exception as e:
         return {
@@ -241,13 +277,13 @@ def demo_encryption_decryption():
             all_decrypted_correctly = False
             continue
         
-        # 解密密码
-        result = decrypt_data(encrypted, username, MASTER_KEY, original_password)
+        # 解密密码（直接解密，不提供原始密码）
+        result = decrypt_data(encrypted, username, MASTER_KEY)
         
         if result['status']:
             print(f"\n用户: {username}")
             print(f"  加密密码: {encrypted[:50]}...")
-            print(f"  解密后: {result['data']}")
+            print(f"  解密后明文: {result['data']}")
             print(f"  原始密码: {original_password}")
             
             # 验证解密是否正确
@@ -298,20 +334,15 @@ def demo_encryption_decryption():
     print("\n测试：使用错误的密钥解密")
     test_username = "alice"
     test_encrypted = encrypted_passwords[test_username]
-    test_password = users[0]["password"]
     wrong_key = "wrong_master_key"
     
-    try:
-        result = decrypt_data(test_encrypted, test_username, wrong_key, test_password)
-        if result['status']:
-            print(f"❌ 验证失败：使用错误密钥竟然解密成功: {result['data']}")
-            all_decrypted_correctly = False
-        else:
-            print(f"✅ 验证通过：使用错误密钥解密失败（符合预期）")
-            print(f"  错误信息: {result['message'][:100]}...")
-    except Exception as e:
+    result = decrypt_data(test_encrypted, test_username, wrong_key)
+    if result['status']:
+        print(f"❌ 验证失败：使用错误密钥竟然解密成功: {result['data']}")
+        all_decrypted_correctly = False
+    else:
         print(f"✅ 验证通过：使用错误密钥解密失败（符合预期）")
-        print(f"  错误信息: {str(e)[:100]}...")
+        print(f"  错误信息: {result['message'][:100]}...")
     
     print("\n" + "=" * 60)
     print("第五步：验证密码验证函数")
@@ -361,11 +392,14 @@ def demo_encryption_decryption():
     print("=" * 60)
     print("\n本实现使用以下加密技术：")
     print("1. PBKDF2-HMAC-SHA256：密钥派生函数，用于从主密钥和盐值派生强密钥")
-    print("2. HMAC-SHA256：基于哈希的消息认证码，用于密码验证")
-    print("3. Base64编码：用于安全存储和传输加密数据")
-    print("4. 盐值：使用用户名作为盐值，确保每个用户的加密结果不同")
-    print("5. 100000次迭代：增强密钥派生的安全性")
-    print("\n注意：由于Python环境限制，本实现使用了PBKDF2和HMAC代替AES")
+    print("2. XOR加密：使用派生密钥和随机IV进行流加密，可以真正解密出明文")
+    print("3. HMAC-SHA256：基于哈希的消息认证码，用于验证数据完整性")
+    print("4. Base64编码：用于安全存储和传输加密数据")
+    print("5. 随机IV（初始化向量）：确保相同数据每次加密结果不同")
+    print("6. 盐值：使用用户名作为盐值，确保每个用户的加密结果不同")
+    print("7. 100000次迭代：增强密钥派生的安全性")
+    print("\n注意：由于无法安装外部加密库，本实现使用了XOR加密代替AES")
+    print("XOR加密可以真正解密出明文，适合演示和学习目的")
     print("在生产环境中，建议使用pycryptodome库实现真正的AES加密")
     print("=" * 60)
 
