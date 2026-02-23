@@ -1,3 +1,5 @@
 .DS_Store
 python/excel_demo/*.xlsx
 react/workflow/*
+react/kline/samples
+react/workflow/xyflow
