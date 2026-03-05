@@ -58,6 +58,7 @@ def get_feishu_access_token(app_id, app_secret):
             url=url,
             json=data,
             headers={"Content-Type": "application/json; charset=utf-8"},
+            verify=False
         )
 
         # 检查响应状态码
@@ -169,6 +170,7 @@ class FeishuAPI:
                     "Authorization": f"Bearer {access_token}",
                     "Content-Type": "application/json; charset=utf-8",
                 },
+                verify=False
             )
 
             # 检查响应状态码
@@ -201,6 +203,7 @@ class FeishuAPI:
                         "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json; charset=utf-8",
                     },
+                    verify=False
                 )
                 response.raise_for_status()
                 result = response.json()
@@ -262,6 +265,7 @@ class FeishuAPI:
                     "Content-Type": "application/json",
                 },
                 json=payload,
+                verify=False
             )
 
             # 检查响应状态码
@@ -299,6 +303,7 @@ class FeishuAPI:
                         "Content-Type": "application/json",
                     },
                     json=payload,
+                    verify=False
                 )
                 response.raise_for_status()
                 result = response.json()
@@ -380,6 +385,7 @@ class FeishuAPI:
                     "Authorization": f"Bearer {access_token}",
                     "Content-Type": "application/json; charset=utf-8",
                 },
+                verify=False
             )
 
             # 检查响应状态码
@@ -413,6 +419,7 @@ class FeishuAPI:
                         "Authorization": f"Bearer {access_token}",
                         "Content-Type": "application/json; charset=utf-8",
                     },
+                    verify=False
                 )
                 response.raise_for_status()
                 result = response.json()
@@ -478,6 +485,7 @@ class FeishuAPI:
                 },
                 params={"receive_id_type": receive_id_type},
                 json=request_body,
+                verify=False
             )
 
             # 检查响应状态码
@@ -528,6 +536,7 @@ class FeishuAPI:
                     },
                     params={"receive_id_type": receive_id_type},
                     json=request_body,
+                    verify=False
                 )
                 response.raise_for_status()
                 result = response.json()
@@ -604,6 +613,7 @@ class FeishuAPI:
                 "Content-Type": "application/json; charset=utf-8",
             },
             json=request_body,
+            verify=False
         )
         response.raise_for_status()
         result = response.json()
